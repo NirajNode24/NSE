@@ -1,43 +1,42 @@
+import yfinance as yf
+import pandas as pd
 
+# Fetch data for NSE and BSE
+symbols = {
+    "SKYGOLD": "SKYGOLD.NS",  # NSE symbol
+    "541967": "541967.BO"     # BSE symbol
+}
 
-# import time
-# from playwright.sync_api import Playwright, sync_playwright, TimeoutError
+# Create a DataFrame to store results
+result_df = pd.DataFrame()
 
-# def run(playwright: Playwright) -> None:
-#     browser = playwright.chromium.launch(headless=True)
-#     context = browser.new_context()
-#     page = context.new_page()
-#     page.goto("https://www.screener.in/screens/2232034/52-week-high-by-irshad/?sort=down+from+52w+high")
+for name, symbol in symbols.items():
+    try:
+        stock = yf.Ticker(symbol)
+        historical_data = stock.history(period="1y")  # Last 1 year
+        historical_data = historical_data.sort_index(ascending=False)  # Sort in descending order
+        close_data = historical_data['Close']  # Select only the 'Close' column
+        
+        # Select data at intervals of 25 days
+        close_data_25_days = close_data[::25]
+        
+        # Prepare DAYS columns
+        days_dict = {
+            f'DAYS_{i*25}': [close_data_25_days.iloc[i]]
+            if i < len(close_data_25_days) else [None]
+            for i in range(len(close_data_25_days))
+        }
+        
+        # Create a DataFrame for the stock
+        stock_df = pd.DataFrame(days_dict)
+        stock_df.insert(0, 'Name', name)
+        
+        # Append to result DataFrame
+        result_df = pd.concat([result_df, stock_df], ignore_index=True)
+    except Exception as e:
+        print(f"Error fetching data for {name} ({symbol}): {e}")
 
-#     all_data = []
+# Save to CSV
+result_df.to_csv('formatted_stock_dma.csv', index=False)
 
-#     while True:
-#         table = page.query_selector("table.data-table.text-nowrap.striped.mark-visited")
-#         rows = table.query_selector_all("tr")
-
-#         for row in rows:
-#             cells = row.query_selector_all("td")
-#             if cells: 
-#                 data = [cell.inner_text() for cell in cells]
-#                 all_data.append(data)
-
-#         try:
-#             next_button = page.get_by_role("link", name="Next ")
-#             if not next_button.is_visible():
-#                 break 
-
-#             next_button.click() 
-#             page.wait_for_load_state("networkidle") 
-#         except TimeoutError:
-#             break 
-#         time.sleep(2)
-
-#     for data in all_data:
-#         print(data)
-
-#     context.close()
-#     browser.close()
-
-# with sync_playwright() as playwright:
-#     run(playwright)
-
+print("The CSV file 'formatted_stock_dma.csv' has been created successfully.")
