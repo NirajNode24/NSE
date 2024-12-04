@@ -30,7 +30,14 @@ for name, symbol in symbols.items():
         stock = yf.Ticker(symbol)
         historical_data = stock.history(period="1y")  # Last 1 year
         historical_data = historical_data.sort_index(ascending=False)  # Sort in descending order
-        close_data = historical_data['Close']  # Select only the 'Close' column
+        close_data = historical_data['Price']  # Select only the 'Close' column
+
+
+
+         = close_data.ewm(span=25, adjust=False).mean()
+
+
+
         
         # Select data at intervals of 25 days
         close_data_25_days = close_data[::25]
